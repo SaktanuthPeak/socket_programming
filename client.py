@@ -1,6 +1,9 @@
 import socket
 from threading import Thread
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class Client:
@@ -30,4 +33,27 @@ class Client:
             print("\033[1;31;40m" + "Server: " + server_message + "\033[0m")
 
 
-Client("127.0.0.1", 7632)
+def main():
+    try:
+        # Load from .env file with fallback defaults
+        host = os.getenv("SERVER_HOST", "127.0.0.1")
+        port = int(os.getenv("SERVER_PORT", "8080"))
+
+        print("Starting TCP Chat client...")
+        print(f"Client will run on {host}:{port}")
+        print("Press Ctrl+C to stop the client")
+        print("Type 'bye' to disconnect current client")
+        print("-" * 40)
+
+        Client(host, port)
+
+    except KeyboardInterrupt:
+        print("\nServer interrupted by user")
+    except Exception as e:
+        print(f"Server error: {e}")
+    finally:
+        print("Server stopped")
+
+
+if __name__ == "__main__":
+    main()
