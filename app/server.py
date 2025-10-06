@@ -29,16 +29,11 @@ class Server:
     def talk_to_client(self, client_socket):
         # Create a thread and start the thread's activity.
         try:
-            receive_thread = Thread(
-                target=self.receive_message, args=(client_socket,)
-            ).start()
-            receive_thread.daemon = True  # Thread ปิดเมื่อ main thread ปิด
-            receive_thread.start()
+            Thread(target=self.receive_message, args=(client_socket,)).start()
+            self.send_message(client_socket)
 
         except Exception as e:
             logging.logger.error(f"Error in talk_to_client: {e}")
-        finally:
-            client_socket.close()
 
     def send_message(self, client_socket):
         while True:
