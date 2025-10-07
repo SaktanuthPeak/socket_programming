@@ -15,9 +15,14 @@ class Server:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind((HOST, PORT))
         self.logger = logging.getLogger(__name__)
+
+        self.username = ""
+        self.get_username()
+
         # Enable a server to accept connections.
         self.socket.listen()
         print("Server waiting for connection....")
+
         # Accept a connection. Returns (conn, address). Conn is a new
         # socket object used to send and receive data on the connection.
         # Address is the address of the other connection.
@@ -26,6 +31,16 @@ class Server:
 
         self.talk_to_client(client_socket)
 
+    def get_username(self):
+        while True:
+            username = input("Enter your username: ")
+            if not username:
+                print("Username cannot be empty.")
+                continue
+
+            self.username = username
+            break
+
     def talk_to_client(self, client_socket):
         # Create a thread and start the thread's activity.
         try:
@@ -33,31 +48,46 @@ class Server:
             self.send_message(client_socket)
 
         except Exception as e:
-            logging.logger.error(f"Error in talk_to_client: {e}")
+            self.logger.error(f"Error in talk_to_client: {e}")
 
     def send_message(self, client_socket):
         while True:
             server_message = input("")
-            # The encode function converts the string into bytes so we can send the bytes down the socket.
+            if server_message.strip().lower() == "bye":
+                client_socket.send("bye".encode())
+                break
+            server_message = f"{self.username}: {server_message}"
             client_socket.send(server_message.encode())
 
     def receive_message(self, client_socket):
         while True:
-            # Receive data from the socket. 1024 is the buffer size, the max amount of data to be received at once.
-            # Returns a bytes object. A returned empty bytes object indicates that the client has disconnected.
-            client_message = client_socket.recv(1024).decode()
-            if not client_message:
-                logging.logger.info("Client disconnected")
+            try:
+                # Receive data from the socket. 1024 is the buffer size, the max amount of data to be received at once.
+                # Returns a bytes object. A returned empty bytes object indicates that the client has disconnected.
+                client_message = client_socket.recv(1024).decode()
+                if not client_message:
+                    logging.info("Client disconnected")
+                    break
+
+                # Handle username setup
+                if client_message.startswith("USERNAME:"):
+                    client_username = client_message.replace("USERNAME:", "").strip()
+                    print(f"Client username: {client_username}")
+                    continue
+
+                if client_message.strip().lower() == "bye":
+                    logging.info("Client sent bye message")
+                    print("Client disconnected")
+                    break
+
+                # Add a red color to the client message
+                print("\033[1;31;40m" + client_message + "\033[0m")
+            except:
                 break
-            if client_message.strip() == "bye" or not client_message.strip():
-                logging.logger.info("Client sent bye message")
-                self.gracefully_shutdown()
-            # Add a red color to the client message
-            print("\033[1;31;40m" + "Client: " + client_message + "\033[0m")
 
     # สําหรับปิดการเชื่อมต่ออย่างถูกต้อง
     def gracefully_shutdown(self):
-        logging.logger.info("gracefully shutting down server...")
+        logging.info("gracefully shutting down server...")
         self.socket.close()
 
 
